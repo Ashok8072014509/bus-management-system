@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum BusStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+enum ConductorStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bus {
+  id                 String    @id @default(uuid())
+  registrationNumber String    @unique
+  busName            String
+  route              String
+  capacity           Int
+  status             BusStatus @default(ACTIVE)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  trips              Trip[]
+  dailies            Daily[]
+  expenses           Expense[]
+}
+
+model Driver {
+  id            String       @id @default(uuid())
+  name          String
+  phone         String
+  licenseNumber String       @unique
+  address       String?
+  salary        Float
+  status        DriverStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  trips         Trip[]
+  dailies       Daily[]
+}
+
+model Conductor {
+  id            String          @id @default(uuid())
+  name          String
+  phone         String
+  licenseNumber String?         @unique
+  address       String?
+  salary        Float
+  status        ConductorStatus @default(ACTIVE)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  trips         Trip[]
+  dailies       Daily[]
+}
+
+model Trip {
+  id          String     @id @default(uuid())
+  busId       String
+  driverId    String
+  conductorId String?
+  date        DateTime   @default(now())
+  status      String     @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  bus         Bus        @relation(fields: [busId], references: [id])
+  driver      Driver     @relation(fields: [driverId], references: [id])
+  conductor   Conductor? @relation(fields: [conductorId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  dailies     Daily[]
+}
+
+model Daily {
+  id                     String     @id @default(uuid())
+  date                   DateTime   @default(now())
+  totalCollection        Float      @default(0)
+  dieselExpense          Float      @default(0)
+  driverSalaryExpense    Float      @default(0)
+  conductorSalaryExpense Float      @default(0)
+  maintenanceExpense     Float      @default(0)
+  otherExpense           Float      @default(0)
+  busId                  String
+  driverId               String
+  conductorId            String?
+  tripId                 String?
+  bus                    Bus        @relation(fields: [busId], references: [id])
+  driver                 Driver     @relation(fields: [driverId], references: [id])
+  conductor              Conductor? @relation(fields: [conductorId], references: [id])
+  trip                   Trip?      @relation(fields: [tripId], references: [id])
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  category    String
+  amount      Float
+  description String?
+  notes       String?
+  addedBy     String?
+  date        DateTime @default(now())
+  busId       String
+  bus         Bus      @relation(fields: [busId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
